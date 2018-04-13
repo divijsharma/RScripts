@@ -25,9 +25,6 @@
 ###
 
 ########## Sentiment Analysis Code ##########
-####
-## Based on the video - https://www.youtube.com/watch?v=ZepOMlAjuB4
-####
 library(ggplot2)
 library(wordcloud)
 library(sentiment)
