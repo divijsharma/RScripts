@@ -83,32 +83,6 @@ tweet.text = gsub(pattern = "[[:digit:]]"
                   , replacement = ""
                   , x = tweet.text)
 
-########## Creating Word Corpus and Cleaning data ##########
-# Corpus is kind of a big bag of words
-tweet_corpus = Corpus(VectorSource(tweet.text))
-# tm_map is the main function to do data cleaning of a corpus. 
-# Converting to plain text
-tweet_corpus = tm_map(tweet_corpus, PlainTextDocument)
-# Removing puntuation
-tweet_corpus = tm_map(tweet_corpus, removePunctuation)
-# Converting to lower case
-tweet_corpus = tm_map(tweet_corpus, content_transformer(tolower))
-# Removing stopwords
-tweet_corpus = tm_map(tweet_corpus, removeWords, stopwords("english"))
-# Removing whitespaces
-tweet_corpus = tm_map(tweet_corpus, stripWhitespace)
-# Stem words
-tweet_corpus = tm_map(tweet_corpus, stemDocument)
-########## Creating Wordcloud ##########
-pal = brewer.pal(n = 8
-                 , name = "Dark2")
-
-wordcloud(words = tweet_corpus
-          , min.freq = 5
-          , max.words = Inf
-          , random.order = FALSE
-          , colors = pal)
-
 ########## Sentiment Analysis ##########
 # Sentiment analysis from syuzhet pacakes finds out the score of various
 # emotions in the sentence. The columns include one for each emotion type as
