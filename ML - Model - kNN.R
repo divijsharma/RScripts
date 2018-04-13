@@ -1,12 +1,11 @@
 ########## kNN for caravan data - MY CODE ##########
 library(ISLR)
-# View(input.caravan)
-# str(input.caravan)
+########## Read Data ##########
 input.caravan = Caravan
 # It is very important to normalilze the data for kNN. In order to understand whether normalization is 
 # required or not, find the variance of each column. If the variance varies significantly then we should
 # normalize the data.
-# Finding variance of each column
+########## Finding variance of each column - Decision on Normalization ##########
 total.cols = ncol(input.caravan)
 variance = numeric()
 # The last column is a factor column so no need to find variance of that
@@ -15,14 +14,13 @@ for (i in 1:total.cols - 1){
 }
 # Find the difference in variance of each column
 diff.in.var = max(variance) - min(variance)
-# diff.in.var
-# variance
+
 # If variance is more than 1 then standardize the columns. The last column is the target variable.
 # Normalization should be done only for numeric columns
 if (diff.in.var > 1){
   input.caravan[,-total.cols] = scale(input.caravan[,-total.cols])
 }
-# Split the data
+########## Split the data into Train and Test ##########
 # First check the distribution of target variable. If the data is skewed then the split should take care
 # of that skewness
 caravan.purchase.distribution = round(prop.table(table(input.caravan$Purchase)) * 100, digits = 1)
@@ -69,7 +67,8 @@ caravan.train.data = caravan.train[,-86]
 if (caravan.test.purchase.dist.max.diff <= 5 & caravan.test.purchase.dist.min.diff <= 5){
   # If the test and training set distribution are in the premissible limit continue with creating kNN
   # model and prediction
-  # Load class library that has kNN 
+  ########## Model Creation ##########
+  # Load class library that has kNN
   library(class)
   number.of.iterations = 20
   predicted.caravan.purchase = NULL
@@ -111,10 +110,14 @@ if (caravan.test.purchase.dist.max.diff <= 5 & caravan.test.purchase.dist.min.di
   print("Could not create the test and train files with the same class distribution as input data")
 }
 
-
 library(gmodels)
 CrossTable(x = caravan.test.purchase, y = best.prediction, prop.chisq=FALSE)
 ########## kNN for Caravan Data - MY CODE ENDS HERE ##########
+
+
+
+
+
 
 ########## kNN using iris dataset ##########
 # We are going to look at a simple dataset for 3 different species of Iris plant
