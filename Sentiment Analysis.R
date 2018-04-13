@@ -14,15 +14,6 @@
 # 8. TheySay
 # 9. NetOwl
 # 10. Bitext
-###
-# Steps - 
-# 1. Read data
-# 2. Clean data
-# 3. Create list of Positive words
-# 4. Create list of Negative words
-# 5. Apply Sentiment Algorithm
-# 6. Analyze the result - Frequency Distribution, Mean, Median, Histogram etc.
-###
 
 ########## Sentiment Analysis Code ##########
 library(ggplot2)
