@@ -153,9 +153,9 @@ tweet_sentiment_score = cbind("Sentiment" = row.names(tweet_sentiment_score), tw
 # Removing row names
 row.names(tweet_sentiment_score) = NULL
 ########## Plotting the Setiment Scores ##########
-ggplot(data = tweet_sentiment_score, aes(x = Sentiment, y = Score)) +
-  geom_bar(aes(fill = Sentiment), stat = "identity") +
-  theme(legend.position = "none") +
-  xlab("Sentiment") +
-  ylab("Score") +
-  ggtitle("Sentiment of Trump Tweets")
+ggplot(data = tweet_sentiment_score, aes(x = Sentiment, y = Score)) 
+  + geom_bar(aes(fill = Sentiment), stat = "identity") 
+  + theme(legend.position = "none") 
+  + xlab("Sentiment") 
+  + ylab("Score") 
+  + ggtitle("Sentiment of Trump Tweets")
