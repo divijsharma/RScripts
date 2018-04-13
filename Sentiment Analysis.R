@@ -148,26 +148,14 @@ names(tweet_sentiment_scroe) = "Score"
 # joy            139
 # sadness        103
 # After taking the sum of columns we have to convert this into a dataframe so 
-
-
-############
-
-library(ggplot2)
-library(tm)
-library(wordcloud)
-library(syuzhet)
-# senti_data_full = read.delim(file = '../Desktop/R/Test Files/Sentiment Analysis/Sentiment Analysis Train.tsv',
-#                             header = TRUE,
-#                             sep = "\t",
-#                             stringsAsFactors = FALSE)
-# The sentiment labels are:
-#   
-# 0 - negative
-# 1 - somewhat negative
-# 2 - neutral
-# 3 - somewhat positive
-# 4 - positive
-
-head(senti_data_full)
-colnames(senti_data_full)
-View(senti_data_full)
+# that the row names of tweet_sentiment_score are also in a column
+tweet_sentiment_score = cbind("Sentiment" = row.names(tweet_sentiment_score), tweet_sentiment_score)
+# Removing row names
+row.names(tweet_sentiment_score) = NULL
+########## Plotting the Setiment Scores ##########
+ggplot(data = tweet_sentiment_score, aes(x = Sentiment, y = Score)) +
+  geom_bar(aes(fill = Sentiment), stat = "identity") +
+  theme(legend.position = "none") +
+  xlab("Sentiment") +
+  ylab("Score") +
+  ggtitle("Sentiment of Trump Tweets")
