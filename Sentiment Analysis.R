@@ -26,10 +26,9 @@
 
 ########## Sentiment Analysis Code ##########
 library(ggplot2)
-library(wordcloud)
-library(sentiment)
 library(syuzhet)
 library(tm)
+library(qdap) # For rm_stopwords function
 ########## Read Tweets File ##########
 tweets = read.csv(file = "../Desktop/R/Test Files/Sentiment Analysis/trump-tweets-5-4-09-12-5-16/trumptweets1205-127.csv"
                   , header = TRUE
@@ -79,11 +78,26 @@ tweet.text = gsub(pattern = "[[:digit:]](am|pm|AM|PM)"
 tweet.text = gsub(pattern = "[[:digit:]]"
                   , replacement = ""
                   , x = tweet.text)
+# Remove whitespaces
+tweet.text = gsub(pattern = "(?<=[\\s])\\s*|^\\s+|\\s+$"
+                  , replacement = ""
+                  , x = tweet.text
+                  , perl = TRUE)
+# Convert to lower case
+tweet.text = sapply(X = tweet.text
+                    , FUN = tolower)
+# Remove stop words
+tweet.text = rm_stopwords(text.var = tweet.text
+                          , stopwords = tm::stopwords("english"))
+# Removing the stopwords using tm package results in a list. get_nrc_sentiment
+# from syuzhet package needs input as a character vector so we have to convert
+# the list to character
+tweet.text = as.character(tweet.text)
 
 ########## Sentiment Analysis ##########
-# Sentiment analysis from syuzhet pacakes finds out the score of various
+# Sentiment analysis from syuzhet package finds out the score of various
 # emotions in the sentence. The columns include one for each emotion type as
-# well as a positive or negative valence. The ten columns are as follows: 
+# well as a positive or negative score. The ten columns are as follows: 
 # 1. anger
 # 2. anticipation
 # 3. disgust
@@ -94,7 +108,8 @@ tweet.text = gsub(pattern = "[[:digit:]]"
 # 8. trust
 # 9. negative
 # 10. positive
-# The setiment score is found on the word vector and not corpus
+# The setiment score is found on the word vector and not corpus. The corpus was 
+# create the word cloud 
 tweet_sentiment = get_nrc_sentiment(char_v = tweet.text)
 # head(tweet_sentiment)
 #   anger anticipation disgust fear joy sadness surprise trust negative positive
@@ -108,9 +123,9 @@ tweet_sentiment = get_nrc_sentiment(char_v = tweet.text)
 # vector. Each of the line of word vector will result in 10 columns by 
 # get_nrc_sentiment(). To get the setiment score of all tweets we have to 
 # sum the sentiment score of each column
-tweet_sentiment_scroe = data.frame(colSums(tweet_sentiment[,]))
-names(tweet_sentiment_scroe) = "Score"
-# head(tweet_sentiment_scroe)
+tweet_sentiment_score = data.frame(colSums(tweet_sentiment[,]))
+names(tweet_sentiment_score) = "Score"
+# head(tweet_sentiment_score)
 #              Score
 # anger          114
 # anticipation   180
@@ -124,9 +139,9 @@ tweet_sentiment_score = cbind("Sentiment" = row.names(tweet_sentiment_score), tw
 # Removing row names
 row.names(tweet_sentiment_score) = NULL
 ########## Plotting the Setiment Scores ##########
-ggplot(data = tweet_sentiment_score, aes(x = Sentiment, y = Score)) 
-  + geom_bar(aes(fill = Sentiment), stat = "identity") 
-  + theme(legend.position = "none") 
-  + xlab("Sentiment") 
-  + ylab("Score") 
-  + ggtitle("Sentiment of Trump Tweets")
+ggplot(data = tweet_sentiment_score, aes(x = Sentiment, y = Score)) +
+  geom_bar(aes(fill = Sentiment), stat = "identity") +
+  theme(legend.position = "none") +
+  xlab("Sentiment") +
+  ylab("Score") +
+  ggtitle("Sentiment of Trump Tweets")
