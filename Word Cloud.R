@@ -183,6 +183,7 @@ wordcloud(words = word_data_frame$Words
 dev.off()
 
 ########## Generating Word Cloud using Wordcloud2 package ##########
+# https://cran.r-project.org/web/packages/wordcloud2/vignettes/wordcloud.html
 # While wordcloud2 gives a lot of flexibility on shape of wordcloud, there are a
 # few issues 
 # 1. There is no parameter to restrict the number of words in the wordcloud2; 
