@@ -13,3 +13,8 @@
   2. Split the data into train and test set based on the distribution of target variable
   3. Run the kNN model multiple times to find the best k value and least error rate
   4. Create csv file with the predictions for the best value of k
+
+## YouTube Analysis.R
+  1. Connecting to YouTube from R using API Key from http://developers.google.com account
+  2. Creating User Network to understand how users have interacted with each other using comments section
+  3. Sentiment Analysis of comments based on score
