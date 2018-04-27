@@ -1,0 +1,92 @@
+########## Working with YouTube data for Sentiment Analysis ###########
+library(SocialMediaLab) # Package used for fetching YouTube Data
+
+########## Get API Keys ##########
+# API key is availabe on developer.google.com. You will need to create the login and
+# a project to enable API key.
+# Get the API key for YouTube Data API 
+api.key = "XXXXXXXXX" # Insert the API key here
+key = AuthenticateWithYoutubeAPI(apiKeyYoutube = api.key)
+
+########## Collect the data using video id ##########
+# For the YouTube video https://www.youtube.com/watch?v=kc54fjQ5VgQ video id is
+# kc54fjQ5VgQ
+video.ids = c("VMC66NWbMwU", "kc54fjQ5VgQ")
+youTube.data = CollectDataYoutube(videoIDs = video.ids
+                   , apiKeyYoutube = key
+                   , writeToFile = FALSE)
+# ### If you have issues related to certificates then it is most probably related to 
+# ### proxy settings the network. Refer to https://github.com/jeroen/curl/issues/116
+# ### for resolution steps. 
+# ### Error in curl::curl_fetch_memory(url, handle = handle) : 
+# ###  error setting certificate verify locations:
+# ###  CAfile: /mingw64/ssl/certs/ca-bundle.crt
+# ###  CApath: none
+
+########## Save the data in hard disk ##########
+write.csv(x = youTube.data
+          , file = "../Desktop/R/Test Files/Sentiment Analysis/YouTube_data.csv"
+          , row.names = FALSE)
+
+########## Read the data from newly written csv file ##########
+youTube.data.df = read.csv(file = '../Desktop/R/Test Files/Sentiment Analysis/YouTube_data.csv'
+                , header = TRUE
+                , stringsAsFactors = FALSE
+                )
+
+# Fetching all the comments that have ReplyToAnotherUser != False
+youTube.data.user = youTube.data.df[youTube.data.df$ReplyToAnotherUser != FALSE,]
+# Extracting the data to create user network analysis
+user.data = data.frame(youTube.data.user$User, youTube.data.user$ReplyToAnotherUser)
+
+########## Create User Network ##########
+# ReplyToAnotherUser != False is essential for the creating User Network. 
+library(igraph)
+user.network = graph.data.frame(d = user.data
+                 , directed = TRUE # If there is a comment form User A to B then an 
+                 # arrow will be added from A to B
+                )
+# Simplyfying the user network. If there is a comment from user to himself then 
+# those will be removed. 
+user.network = simplify(user.network)
+# Vertices of network. Each vertex is a user
+V(user.network)
+# Edges of network. Comment from one user to another forms an edge
+E(user.network)
+# Create more columns for further processing
+V(user.network)$label = V(user.network)$name
+V(user.network)$degree = degree(user.network)
+
+########## Histogram of Node Degree ##########
+hist(x = V(user.network)$degree
+     , col = "cyan"
+     , main = "Histogram of User Network Node Degree"
+     , ylab = "Frequency"
+     , xlab = "Degree of Vertices"
+     )
+
+########## Creating Network Diagram ##########
+plot(x = user.network
+     , vertex.size = 0.2 * V(user.network)$degree
+     , edge.arrow.size = 0.1
+     , vertex.label.cex = 0.5 * V(user.network)$degree
+     )
+
+########## Sentiment Analysis ##########
+library(syuzhet)
+comments = youTube.data.df$Comment
+# ## ## The usual cleaning of data may be needed as specified in 
+# ## ## https://github.com/divijsharma/RScripts/blob/master/Sentiment%20Analysis.R
+# ## ## https://github.com/divijsharma/RScripts/blob/master/Word%20Cloud.R
+# For the sake of simplicity, creating the sentiment score without cleaning the data
+sentiment.score.comments = get_nrc_sentiment(comments)
+# If the comment is neither positive nor negative i.e. if negative = 0 and positive
+# = 0 then the comment is neutral
+sentiment.score.comments$neutral = ifelse(sentiment.score.comments$negative == 0 & sentiment.score.comments$positive == 0, 1, 0)
+# Creating Barplot for sentiment scores
+barplot(colSums(sentiment.score.comments) / sum(sentiment.score.comments) * 100
+        , las = 2
+        , col = rainbow(11) # One for each column (emotion)
+        , ylab = "Percent"
+        , main = "Sentiment Score"
+        )
