@@ -1,0 +1,349 @@
+########## Time Series Analysis ##########
+# There are 3 types of Forecasting models
+# 1. Explanatory Models  - Forecasting models that predict a specific variable of interest
+# 2. Time series Models - They are essentially univariate. This forecasting model only 
+#           leverages historic data or past vaules. No external data is used in this model.
+#           The variable we are trying to predict is the only variable in this model along with
+#           time. 
+# 3. Dymnamic regression Models - These are combination of explantory and time series models. 
+#           Other names of this model are - 
+#                     A. Panel Data Models
+#                     B. Longitudinal Models
+#                     C. Linear System Models
+
+#### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! IMPORTANT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#### THEORY BEHIND VARIOUS TYPES OF DECOMPOSING TIMESERIES - ADDITIVE AND MULTIPLICATIVE.
+# Any time series usually has 4 different characteristics at any given time.
+# 1. Trend - the trend component at time t, that reflects the long-term progression of the
+#            series (secular variation). A trend exists when there is an increasing or
+#            decreasing direction in the data. The trend component does not have to be
+#            linear. This will be represented by T
+# 2. Cyclic - the cyclical component at time t, that describes repeated but non-periodic 
+#           fluctuations. The duration of these fluctuations is usually of at least two
+#           years. This will be represented by C
+# 3. Seasonal - the seasonal component at time t, reflecting seasonality (seasonal 
+#           variation). A seasonal pattern exists when a time series is influenced by
+#           seasonal factors. Seasonality is always of a fixed and known period (e.g., the
+#           quarter of the year, the month, or day of the week). This is represented by S.
+# 4. Irregular or Random or White Noise - the irregular component (or "noise") at time t, 
+#           that describes random, irregular influences. It represents the residuals or
+#           remainder of the time series after the other components have been removed. This 
+#           is represented by I
+#
+# Hence a time series can be represented by 2 models - 
+# 1. Additive - y = T + C + S + I
+# 2. Multiplicative - y = T * C * S * I
+#
+# Either of these two methods are used in "type" variable in the decompose command. The 
+# default value is "additive"
+#
+# decompose(ap) will give values of T, C, S, I in additive model
+# decompose(ap, type = "mult"), decompose(ap, type = "multiplicative") will give values of 
+# T, C, S, I in multiplicative model. 
+#
+# An additive model would be used when the variations around the trend does not vary with
+# the level of the time series where as a multiplicative model would be appropriate if the
+# trend is proportional to the level of the time series. 
+
+########## Read the data ##########
+# Read the Gas Usage Data
+gas.usage.raw = read.csv(file = "../Desktop/R/TimeSeries/montly-av-residential-gas-usage.csv",
+                         header = TRUE)
+
+########## Decomposing the timeseries ##########
+# This does not use any packages and is for visualization only. gas.usage.ts is a timeseries 
+# object
+gas.usage.ts = ts(gas.usage.raw$Usage, start = c(1971, 1), frequency = 12)
+head(gas.usage.ts, n = 15)
+start(gas.usage.ts)
+frequency(gas.usage.ts)
+time(gas.usage.ts)
+gas.usage.decompose.add = decompose(gas.usage.ts)
+plot(gas.usage.decompose.add)
+gas.usage.decompose.mul = decompose(x = gas.usage.ts, type = "multiplicative")
+plot(gas.usage.decompose.mul)
+# Various columns of the decomposed timeseries object are - 
+gas.usage.decompose.add$x # This is the raw data. Coming as "observed" in decompose plot above.
+gas.usage.decompose.add$seasonal # This is seasonal data.  Coming as "seasonal" in decompose plot above. The
+# Value of seasonal data is usually same for a given frequency. In this case it is for every
+# month. 
+gas.usage.decompose.add$trend # This is trend data.  Coming as "trend" in decompose plot above.
+gas.usage.decompose.add$random # This is white noise.  Coming as "random" in decompose plot above.
+gas.usage.decompose.add$figure # Not sure what this is. 
+gas.usage.decompose.add$type # This is the type of decomposed data. Same as "type" mentioned in the 
+# command. Default value is "additive". Another value is "multiplicative".
+
+########## Manipulation of date column ##########
+# We have to know which column is a date/time column. The time column has to be treated 
+# differently than the other data. In case there is no specific column for time and we have
+# data for date, month, year all in different variables then 
+# 1. Create another variable by concatinating the date, month, year columns and cast it 
+#    as.Date
+# 2. Drop all the columns for data, month and year
+# 3. Convert the dataframe in timeseries object.
+#
+# In case the time is in a single column then first verify that, that variable is recognized
+# as date using the command str. In case the column that has time is not recognized as time
+# then we need to cast that column as time before converting the dataframe to timeseries 
+# object.
+#
+# In case the data has a column only for year as in above inflation data, special care has to 
+# be taken to convert the column to date using as.Date function. as.Date(<int>) give an 
+# error that "origin has to be specified" so that it can calulate number of days from that
+# origin OR calculate the number of days from default origin.
+# In the below code the same column is updated. No differnt column is created. 
+# Converting month to date
+gas.usage.raw$Month = as.Date(paste(gas.usage.raw$Month, "-01", sep = ""))
+
+########## Splitting the data into test and train ##########
+# Splitting the data in 80:20. 80:20 split is common in time series data. In time series
+# we do not ramdomize the data for splitting. The idea is to take the most recent data
+# as test data. If we randomize then the essesnce of time series will be lost.
+train.rows = round(x = nrow(gas.usage.raw)* 0.8
+                   , digits = 0)
+gas.usage.train = gas.usage.raw[c(1:train.rows), ]
+gas.usage.test = gas.usage.raw[-c(1:train.rows), ]
+months.to.predict = nrow(gas.usage.test)
+
+########## Plotting the training data for visualization ##########
+library(ggplot2)
+ggplot(data = gas.usage.train, aes(x = Month, y = Usage)) +
+  geom_line()
+
+########## Convert to xts object ##########
+# xts = eXtended Time Series
+# The first column is related to date. So when converting to timeseries the date column is 
+# not considered in data "x" and the timeseries data is ordered by the date column. In case 
+# a new column is created for date by combining separate columns for year, month and day, it
+# is advisable to delete those columns from the original data. gas.usage.train.xts is an xts
+# object
+library(xts)
+gas.usage.train.xts = xts(x = gas.usage.train[, -1], order.by = gas.usage.train[, 1])
+colnames(gas.usage.train.xts) = "Usage"
+# After converting the data in timeseties object the date has now become index of the data
+# and all other columns (which were not part of order.by) have become "coredata".
+# > head(gas.usage.train.xts)
+#            Usage
+# 1971-01-01   302
+# 1971-02-01   262
+# 1971-03-01   218
+# 1971-04-01   175
+# 1971-05-01   100
+# 1971-06-01    77
+
+########## Calculating the difference ##########
+# The difference is calculated before predicting
+gas.usage.train.xts.diff = diff(gas.usage.train.xts$Usage)
+
+######### Creating the ARIMA model ##########
+library(forecast)
+gas.usage.month.arima = auto.arima(y = gas.usage.train.xts.diff
+                                   , seasonal = TRUE)
+
+######### Predicting ARIMA model ##########
+prediction = predict(object = gas.usage.month.arima,
+                     n.ahead = months.to.predict)
+
+######### Forecasting ##########
+usage.forecast = forecast(gas.usage.month.arima
+                          , h = months.to.predict)
+plot(usage.forecast)
+
+########## THEORY ##########
+
+########## White Noise in the Timeseries ##########
+# An example of white noise is below plot
+plot.ts(rnorm(200), col = "blue")
+# !!!!!!!!!!!!!!!!!! WHAT IS A RANDOM WALK? !!!!!!!!!!!!!!!!
+# In a white noise the value of 'y' at time 't' (represented as y(t)) is equal to value of
+# y at time t-1 plus some random value epsilon(t) (represented as e(t)). This random value
+# can be anything. In an equation
+# y(t) = y(t-1) + e(t)
+# y(t-1) - y(t-2) + e(t-1)... and so on. Substituting values
+# y(t) = e(1) + e(2) + e(3) + ...... + e(t-1) + e(t)
+# The above is also called as random walk. To plot a random walk we take the cumulative sum 
+# of the random errors. These errors can be generated by rnorm(200) which creates 200 random
+# normalized numbers with mean = 0 and variance = 1. The reason we take the cumulative sum
+# for a random walk is because as in a walk every step is dependant on all the previous 
+# steps - we keep on adding to previous step. The below plot will be different everytime it
+# is generated because as the name suggests it is a RANDOM WALK
+plot.ts(cumsum(rnorm(200)), col = "red")
+# In case we want a random walk with a different mean and variance then the plot will be
+plot.ts(cumsum(rnorm(n = 200, mean = 3.14, sd = 4)), col = "blue")
+#
+########## AR1 - AutoRegressive 1 lag - First order autoregressive process ##########
+# y(t) = phi*y(t-1) + c + e(t) where phi is a constant, c is constant and e(t) is a random
+# error which is normally distributed with mean = 0 and variance = sigma square.
+# 1 lag is related to y(t-1). A second lag will be y(t) = phi*y(t-2) + c + e(t) 
+# SEE HANDWRITTEN NOTES TS1 TO TS4
+# Simulating the AR1 in R 
+# c = 0 and e(t) will be from normally distributed values with mean = 0 and variance = 1
+# y(t) = 0.9*y(t-1) + e(t)
+y = arima.sim(n = 500, model = list(ar = 0.9), innov = rnorm(500))
+head(y)
+plot.ts(y)
+acf(y) # Auto corelation function - this finds the corelation of y(t) with every other value
+# How y(t) is corelated with y(t-1), y(t) is corelated with y(t-2), 
+# y(t) is corelated with y(t-3) etc. The value of ACF in the y axis determines how much is
+# y is related to lag. 
+
+pacf(y) # Partial Auto Corelation Function - This will show the corelation between y(t) and
+# y(t-1). In this case it will show that y(t) depends only on y(t-1) and if we take out 
+# y(t-1) completely then y(t) does not depend on anything else. Partial correlation function
+# tells us current value is dependent on how many variables in past. The longest line is most
+# significant. Say for example the values of first lag and 15th lag are highest then the 
+# equation of time series will be 
+# y(t) = phi1*y(t-1) + phi2*y(t-15) + c + e(t).
+# The two lines in pacf graph are for 95% confidence values. Anything outside these lines 
+# shaould be considered or at the least relooked at to find the correlation. The lines in 
+# negative side - below x axis - imply that phi in that case is negative.
+test.pacf = pacf(y)
+class(test.pacf)
+test.pacf$acf
+test.pacf$type
+test.pacf$n.used
+test.pacf$lag
+test.pacf$series
+test.pacf$snames
+########## FINDING THE SIGNIFICANT LAGS PROGRAMATICALLY ##########
+qnorm(c(0.025, 0.975))/sqrt(500) # This is the 95% confidence levels for a time series of 
+# 500 values. The formula is qnorm(c(0.025, 0.975))/sqrt(n). Any value of test.pacf$acf more
+# than the upper limit or less than the lower limit should be considered. The corresponding 
+# lag for that index can be found from test.pacf$lag[index]. See the below code
+# Calculate 95% confidence level limits
+timeseries.conflevel95 = qnorm(c(0.025, 0.975))/sqrt(500)
+# extract upper and lower limit
+upper.limit = timeseries.conflevel95[2]
+lower.limit = timeseries.conflevel95[1]
+# Convert acf as dataframe as we want to extract indexes and it is not possible with acf
+# object
+acf.df = as.data.frame(test.pacf$acf)
+colnames(acf.df) = c("acf")
+acf.df
+# Extract significant indexes
+significant.indexes = which(acf.df$acf > upper.limit | acf.df$acf < lower.limit)
+class(significant.indexes)
+# Extract lag of the significant indexes
+lag.df = as.data.frame(test.pacf$lag)
+significant.lag = lag.df[significant.indexes,]
+# significant.lag will then have all the lags that are significant.
+########## AR2 - AutoRegressive 2 lag - Second order autoregressive process ##########
+# The equation of AR2 is y(t) = phi1*y(t-1) + phi2*y(t-2) + e(t)
+ar2 = arima.sim(n = 500, model = list(ar = c(0.88, -0.48)), innov = rnorm(500))
+# The equation of above is y(t) = 0.88*y(t-1) -0.48*y(t-2) + e(t) with e(t) is error in 
+# normal distribution with mean = 0 and variance = 1. In AR1 |phi| < 1 for the series to be
+# bound. In case of AR2 and other lags that is not a necessity. So |phi1|, |phi2| etc can be
+# > 1. "ar" in the formula means auto regression
+plot.ts(ar2)
+acf(ar2)
+pacf(ar2)
+########## MA1 - Moving Average 1 lag ##########
+# the equation of MA timeseries is 
+# MA(n) = kaapa + e(t) + theeta1*e(t-1) + theeta2*e(t-2) + ... + theetaN*e(t-n)
+# This equation is not dependant on previous values of y
+# The formula for MA = 
+ma2 = arima.sim(n = 500, model = list(ma = c(0.88, -0.48)), innov = rnorm(500))
+ma2
+plot.ts(ma2)
+acf(x = ma2, na.action = na.pass) # Initially I made a mistake in the formula for generating
+# MA. arima.sim(n = 500, model = list(ma = c(0.88, -0.48)), innov = rnorm(100)). n was 500
+# and rnorm was 100. Because of this only 100 random numbers were generated and 101-500 were
+# NA. So I was getting an error "Error in na.fail.default(as.ts(x)) : missing values in 
+# object". To circumvent that I added "na.action = na.pass". This solved the error but was
+# essentially wrong because my data was missing 400 values. 
+pacf(ma2)
+# In case of MA pacf is not as important as acf. We expect the n significant auto-correlations 
+# for MA(n) and alternating patterns for pacf. In reading acf we should always ignore the 
+# first line which will always be 1 as it denotes the auto correlation to itself. So the
+# other lines are of significance. In this case we have 2 more lines of significance so we 
+# concur that it is MA of 2 lag.
+########## Prediction of Timeseries ##########
+# Any timeseries data is made up of 2 parts - 
+# 1. Deterministic Part - This can come from observable trend or cyclicity. The trend is like
+# increadse in population is causing increase in demand. Cyclicity is the consumption of an 
+# item due to seasonality (e.g. winter clothes)
+# 2. Stocastic Part - this data is relevant to timeseries. We consider the past data which in 
+# turn is generated by shocks e(i) is a subset of normally distributed numbers with mean = 0
+# and variance = 1
+# It is very important to understand the data. Does it have deterministic part (trend and
+# seasonality)? If it does then these parts have to removed before fitting the timeseries.
+# In other words the timeseries is fit only on the "random" part of the data. We create 
+# multiple models and choose the one with lowest log likelihood and Akakie's information
+# criterion. 
+# The good part is that R helps us in separting out deterministic part.
+ap = AirPassengers
+ap.decom = decompose(x = ap, type = "mult") # "mult" tell R to break the data into 3 parts
+# trend, seasonality and random part. This random part is the stocastic part on which time
+# series prediction will be done. Random part, residual all mean the same. We try to predict
+# the residuals.
+plot(x = ap.decom)
+random.ap = ap.decom$random
+pacf(x = random.ap, na.action = na.exclude)
+acf(x = random.ap, na.action = na.exclude)
+########## Using Regression to take Seasonality and Trend out ##########
+# This is the manual process to take out the seasonality and trend. Not using the built in
+# R function decompose.  
+cycle(ap) # This tells us how many cycles are in the data. IN case of airline passenger data 
+# there are 12 cycles. One for every Month. 
+time(ap) # This gives the time according to year. January is always zero. February is adding
+# 1/12 to the year so it becomes 1949.083, March is adding 2/12 and so on. 
+# Creating the Models - first we have to take the time out and factor out of the timeseries 
+m1 = lm(ap~time(ap) + factor(cycle(ap))) # factor part is the regression on seasons. 
+m2 = lm(ap~0 + time(ap) + factor(cycle(ap))) # here we ensuring that the model runs without
+# intercept. 
+summary(m1)
+summary(m2) # In the summary of m2 intercept is not present. The p values of all the
+# coefficients are very low so all are significant. 
+m1
+m2
+m3 = residuals(m2)
+pacf(m3)
+
+library(mvtnorm)
+
+
+#
+#
+#
+z = c(1, -1.5, 0.75)
+a = polyroot(z)
+a
+# Seeing all 3 graphs - timeseries, acf and pacf in the same pane.
+lay = par(no.readonly = TRUE)
+layout(matrix(c(1,1,2,3), 2, 2, byrow = TRUE))
+plot.ts(y); acf(y, main = "Auto-Corr"); pacf(y, main = "Par-Corr")
+par(lay)
+# !!!!!!!!!!!!!!! PLOTTING USING GGPLOT2 !!!!!!!!!!!!!!!!!!
+# Converting the xts object to dataframe. There's no direct way of creating plot of xts using
+# ggplot. GGplot works only for data frames. By "fortify"ing the date index of xts object is
+# converted to a column. 
+
+#
+
+
+# tsplot helps us to visualize two time series data with or without same start and end.
+ts.plot(urate, ap, col=c("red","Blue"))
+raw.infl = read.csv(file = "C:\\Users\\dsharma\\Desktop\\R\\TimeSeries\\CPIAUCSL.csv",
+                    header = TRUE)
+inflrate = ts(raw.infl$VALUE, start = c(1948, 1), frequency = 12)
+ts.plot(urate, inflrate, col=c("red","Blue"))
+
+########## Corelation in time series ##########
+# This is found out by the acf - Auto Corelation Function
+acf(urate)
+acf(ts.intersect(urate, ap)) # ts.intersect claculates the intersection of 2 time series
+ts.union() # creates the union
+
+########## Forecasting of timeseries ##########
+# Holt winters method
+plot(HoltWinters(x = urate, alpha = 0.001, beta = 1, gamma = 0))
+plot(HoltWinters(ap))
+plot(HoltWinters(x = ap, alpha = 0.1, beta = 0.2, gamma = 0))
+# to predict we first create a holt winters object
+ap.hw = HoltWinters(ap)
+# then predict the time series
+ap.predict = predict(ap.hw, n.ahead = 10*12) # we are trying to predict next 10 years (10*12)
+# occurances. ap.predict is a timeseries object and starts from the first month of 1961
+start(ap.predict)
+end(ap)
+ts.plot(ap, ap.predict, col=c("red", "blue"))
