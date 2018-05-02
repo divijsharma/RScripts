@@ -18,3 +18,12 @@
   1. Connecting to YouTube from R using API Key from http://developers.google.com account
   2. Creating User Network to understand how users have interacted with each other using comments section
   3. Sentiment Analysis of comments based on score
+
+## Time Series Analysis.R
+  1. Theory of time series
+  2. Auto correlation function
+  3. Partial Auto correlation Function
+  4. White Noise in the Time series
+  5. First order auto-regressive process
+  6. Second order auto-regressive process
+  7. Moving Average 1 lag
