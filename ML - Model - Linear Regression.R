@@ -144,8 +144,8 @@ shapiro.test(dataset$y)
 # Reading the training and test set provided in the lecture.
 # As the files provided are not csv but xlsx files using xlsx package to read the data
 library(xlsx)
-train_lecture = read.xlsx(file = "C:\\Users\\dsharma\\Desktop\\R\\Test Files\\Udemy Lectures\\Train.xlsx", sheetName = "train", header = TRUE)
-test_lecture = read.xlsx(file = "C:\\Users\\dsharma\\Desktop\\R\\Test Files\\Udemy Lectures\\Test.xlsx", sheetName = "test", header = TRUE)
+train_lecture = read.xlsx(file = "C:\\Users\\dsharma\\Desktop\\R\\Test Files\\Train.xlsx", sheetName = "train", header = TRUE)
+test_lecture = read.xlsx(file = "C:\\Users\\dsharma\\Desktop\\R\\Test Files\\Test.xlsx", sheetName = "test", header = TRUE)
 
 linear_model = lm(y~x, data = train_lecture)
 x = c(1,9)
