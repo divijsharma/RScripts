@@ -13,6 +13,11 @@
   2. Split the data into train and test set based on the distribution of target variable
   3. Run the kNN model multiple times to find the best k value and least error rate
   4. Create csv file with the predictions for the best value of k
+ 
+## ML - Model - Linear Regression.R
+  1. Various degrees of polynomials
+  2. Putting equation of line in the plot
+  3. Calculating and plotting MSE for various degrees of polynomial equation.
 
 ## YouTube Analysis.R
   1. Connecting to YouTube from R using API Key from http://developers.google.com account
